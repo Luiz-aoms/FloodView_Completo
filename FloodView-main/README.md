@@ -288,7 +288,7 @@ Os filtros do painel combinam busca por nome/endereço (sem diferenciar acentos)
 
 A aba **Equipe e ocorrências** salva chamados na tabela Ocorrencias e exibe o protocolo após confirmação da API. Os tipos incluem suporte, novo sensor, calibração e falha do sistema. A API tenta enviar um e-mail automaticamente após salvar. O destinatário configurado é `luiz.a.silva56@aluno.senai.br`; o endereço informado no formulário é usado para resposta, nunca para substituir o destinatário.
 
-**Registrar alerta e enviar e-mail** usa o mesmo fluxo para o ponto selecionado com leitura atual. O registro pelo botão é manual; mudanças de nível não disparam e-mails por conta própria. Não há envio de SMS ou integração com a Defesa Civil.
+**Enviar alerta deste ponto** usa o mesmo fluxo para o ponto selecionado com leitura atual. O registro pelo botão é manual; mudanças de nível não disparam e-mails por conta própria. Não há envio de SMS ou integração com a Defesa Civil.
 
 O resultado distingue registro salvo de e-mail aceito pelo servidor SMTP. Isso não confirma entrega na caixa de entrada. Sem configuração ou em falha de SMTP, a ocorrência continua salva e o painel mostra um aviso; não há fila persistente nem repetição automática do envio. O resultado de envio é retornado na resposta, mas não é gravado como histórico de entrega no banco.
 
