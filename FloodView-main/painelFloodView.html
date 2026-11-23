@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FloodView - Monitoramento de Alagamentos</title>
+  
+  <!-- Tailwind CSS CDN -->
+  <link rel="stylesheet" href="vendor/tailwind.css">
+  
+  <!-- Leaflet CSS & JS -->
+  <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+  <script src="vendor/leaflet/leaflet.js"></script>
+  
+  <!-- Leaflet Fullscreen Plugin -->
+  <script src='vendor/fullscreen/Leaflet.fullscreen.min.js'></script>
+  <link href='vendor/fullscreen/leaflet.fullscreen.css' rel='stylesheet' />
+
+  <!-- Chart.js -->
+  <script src="vendor/chart/chart.umd.js"></script>
+  
+  <style>
+    [hidden] { display: none !important; }
+    #map { min-height: 450px; }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.95); opacity: 0.9; }
+      50% { transform: scale(1.45); opacity: 0.35; }
+      100% { transform: scale(0.95); opacity: 0.9; }
+    }
+    .pulse-animation {
+      animation: pulse-ring 1.6s infinite ease-in-out;
+    }
+    .leaflet-popup-content-wrapper {
+      border-radius: 8px;
+      padding: 2px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+  </style>
+  <link rel="stylesheet" href="styles/identity.css">
+  <link rel="stylesheet" href="styles/sidebar.css">
+  <link rel="stylesheet" href="styles/devices.css">
+</head>
+<body class="fv-app bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+  <aside id="fv-sidebar" class="fv-sidebar" aria-label="Menu principal">
+    <a class="fv-sidebar-brand" href="painelFloodView.html">
+      <img class="logo-img" src="images/logo.png" alt="" width="40" height="40">
+      <span class="fv-sidebar-name">Flood<span>View</span></span>
+    </a>
+    <button id="sidebar-close" class="fv-sidebar-close" aria-label="Fechar menu">&times;</button>
+    <p class="fv-sidebar-caption">Monitoramento</p>
+      <!-- Navigation Tabs (Sem Scroll) -->
+      <nav class="flex flex-wrap items-center justify-center gap-1 bg-slate-100/80 p-1 rounded-lg border border-slate-200/60 text-xs font-medium w-full sm:w-auto">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-3 py-1.5 rounded-md text-slate-900 bg-white shadow-sm font-semibold transition-all">
+          Painel Principal
+        </button>
+        <button onclick="switchTab('charts')" id="nav-charts" class="nav-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all">
+          Análises & Gráficos
+        </button>
+        <button onclick="openRegisterModal()" class="px-3 py-1.5 rounded-md text-slate-700 hover:bg-slate-200/70 transition-all flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Cadastrar Ponto
+        </button>
+        <button onclick="switchTab('devices')" id="nav-devices" class="nav-btn">Dispositivos</button>
+        <button onclick="switchTab('contact')" id="nav-contact" class="nav-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all">
+          Equipe e ocorrências
+        </button>
+      </nav>
+
+    <div class="fv-sidebar-note"><a href="painelFloodView.html">Painel FloodView</a>Boa Vista &middot; RR<br>Monitoramento h&iacute;drico</div>
+  </aside>
+  <div id="sidebar-backdrop" hidden></div>
+
+  <!-- TOPBAR / NAVIGATION HEADER -->
+  <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row justify-between items-center gap-3">
+      
+      <button id="sidebar-toggle" class="fv-menu-toggle" aria-label="Abrir menu" aria-controls="fv-sidebar" aria-expanded="false">&#9776;</button>
+      <!-- Brand & Location -->
+      <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
+        <div class="flex items-center gap-2.5">
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-xl font-bold text-slate-900 tracking-tight leading-none">
+                Flood<span class="text-indigo-600">View</span>
+              </h1>
+              <span class="text-[10px] font-semibold px-1.5 py-0.5 bg-slate-100 text-slate-600 border border-slate-200 rounded uppercase">Monitoramento</span>
+            </div>
+            <p class="text-[11px] text-slate-500">Inteligência para acompanhar a água</p>
+          </div>
+        </div>
+
+        <!-- Mobile Clock -->
+        <div data-live-values style="display: contents"><div class="lg:hidden text-xs text-slate-500 font-mono" id="clock-display-mobile" v-text="live.clock"></div></div>
+      </div>
+
+      <!-- Status Indicator & Clock -->
+      <div class="hidden lg:flex items-center gap-3 text-xs font-medium">
+        <div class="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 text-slate-600">
+          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5"/>
+          </svg>
+          <span>Clique no mapa para marcar</span>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200">
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span class="text-slate-700">Boa Vista / RR</span>
+          <span class="text-slate-300">|</span>
+          <div data-live-values style="display: contents"><span class="text-slate-500 font-mono" id="clock-display" v-text="live.clock"></span></div>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-5 flex-1 w-full">
+
+    <div class="fv-page-heading">
+      <div>
+        <div class="fv-eyebrow">FloodView / Central de monitoramento</div>
+        <h2>Uma visão clara de cada ponto.</h2>
+        <p>Acompanhe o nível da água, explore as leituras e identifique mudanças nas áreas monitoradas.</p>
+      </div>
+      <a class="fv-backlink" href="painelFloodView.html">← Sobre o projeto</a>
+    </div>
+
+    <!-- ALERT BANNER -->
+    <div id="alert-banner" class="bg-slate-900 border-l-4 border-l-red-500 text-white p-3.5 rounded-lg shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded bg-red-600/20 text-red-400 flex items-center justify-center shrink-0 border border-red-500/30">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+        </div>
+        <div>
+          <div data-live-values style="display: contents"><h4 id="live-notice-title" class="font-bold text-slate-100" v-text="live.notice.title"></h4></div>
+          <div data-live-values style="display: contents"><p id="live-notice-text" class="text-slate-300 mt-0.5" v-text="live.notice.text"></p></div>
+        </div>
+      </div>
+      <button onclick="document.getElementById('alert-banner').hidden = true" class="text-slate-400 hover:text-white underline shrink-0">
+        Fechar
+      </button>
+    </div>
+
+    <!-- TAB 1: DASHBOARD MAIN VIEW -->
+    <div id="dashboard-filters" class="fv-filter-panel">
+      <div class="fv-filter-grid">
+        <label for="filter-search">Buscar ponto ou endereço<input id="filter-search" type="search" placeholder="Ex.: Centro" autocomplete="off"></label>
+        <label for="filter-device">Dispositivo<select id="filter-device"><option value="">Todos os dispositivos</option></select></label>
+        <label for="filter-status">Situação do ponto<select id="filter-status"><option value="">Todas as situações</option><option value="verde">Normal</option><option value="amarelo">Atenção</option><option value="vermelho">Alagamento</option><option value="preto">Crítico</option><option value="cinza">Sem dados atuais</option></select></label>
+        <button type="button" onclick="clearDashboardFilters()">Limpar filtros</button>
+      </div>
+      <div data-live-values><p class="fv-filter-summary" role="status" v-text="live.filterSummary"></p></div>
+    </div>
+
+    <section id="tab-dashboard" class="tab-content space-y-5">
+
+      <!-- KPI CARDS -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        
+        <!-- LEVEL 1: NORMAL -->
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm border-l-4 border-l-emerald-500 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Nível 1 - Normal</span>
+            </div>
+            <div data-live-values style="display: contents"><p class="text-2xl font-bold text-slate-900" id="count-verde" v-text="live.counts.verde"></p></div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Abaixo do limite de atenção</p>
+          </div>
+        </div>
+
+        <!-- LEVEL 2: ATENÇÃO -->
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm border-l-4 border-l-amber-500 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Nível 2 - Atenção</span>
+            </div>
+            <div data-live-values style="display: contents"><p class="text-2xl font-bold text-slate-900" id="count-amarelo" v-text="live.counts.amarelo"></p></div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Limite de atenção atingido</p>
+          </div>
+        </div>
+
+        <!-- LEVEL 3: ALAGAMENTO -->
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm border-l-4 border-l-red-500 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full bg-red-500"></span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-600">Nível 3 - Alagamento</span>
+            </div>
+            <div data-live-values style="display: contents"><p class="text-2xl font-bold text-slate-900" id="count-vermelho" v-text="live.counts.vermelho"></p></div>
+            <p class="text-[11px] text-slate-500 mt-0.5">Limite de alerta atingido</p>
+          </div>
+        </div>
+
+        <!-- LEVEL 4: CRÍTICO -->
+        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm text-white border-l-4 border-l-slate-400 flex justify-between items-start">
+          <div>
+            <div class="flex items-center gap-1.5 mb-1">
+              <span class="w-2 h-2 rounded-full bg-white animate-pulse"></span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-300">Nível 4 - Crítico</span>
+            </div>
+            <div data-live-values style="display: contents"><p class="text-2xl font-bold text-white" id="count-preto" v-text="live.counts.preto"></p></div>
+            <p class="text-[11px] text-slate-400 mt-0.5">Limite crítico atingido</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MAP & SELECTED POINT PANEL -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        <!-- LEAFLET MAP CONTAINER -->
+        <div class="fv-map-card lg:col-span-2 bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-col h-[500px] shadow-sm">
+          <div class="flex justify-between items-center mb-2.5 px-1">
+            <div>
+              <h2 class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
+                <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                Telemetria em Tempo Real
+              </h2>
+            </div>
+            
+            <button onclick="openRegisterModal()" class="text-xs px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-md transition-all flex items-center gap-1 shrink-0">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              Adicionar Ponto
+            </button>
+          </div>
+          
+          <div id="map" class="w-full flex-1 rounded-lg border border-slate-200 z-10 cursor-crosshair"></div>
+          <div class="fv-legend" aria-label="Legenda do mapa">
+            <span><i style="--dot:#10b981"></i>Normal</span>
+            <span><i style="--dot:#f59e0b"></i>Atenção</span>
+            <span><i style="--dot:#ef4444"></i>Alagamento</span>
+            <span><i style="--dot:#0f172a"></i>Crítico</span>
+            <span><i style="--dot:#94a3b8"></i>Sem dados</span>
+          </div>
+        </div>
+
+        <!-- SELECTED POINT DETAILS -->
+        <div class="fv-sensor-card bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2.5 gap-2">
+              <div>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sensor Selecionado</span>
+                <div data-live-values style="display: contents"><h3 class="text-base font-bold text-slate-900 leading-snug" id="selected-name" v-text="live.selected.name"></h3></div>
+                <div data-live-values style="display: contents"><p class="text-xs text-slate-500" id="selected-address" v-text="live.selected.address"></p></div>
+              </div>
+              <div data-live-values style="display: contents"><span id="selected-status-badge" class="px-2 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded tracking-wider uppercase shrink-0" v-text="live.selected.status" :style="{ backgroundColor: live.selected.color }"></span></div>
+            </div>
+
+            <!-- WATER LEVEL METRICS -->
+            <div class="space-y-3 mb-4">
+              <div>
+                <div class="flex justify-between text-xs font-semibold mb-1">
+                  <span class="text-slate-600">Capacidade do Canal</span>
+                  <div data-live-values style="display: contents"><span class="text-slate-900 font-bold" id="selected-level-text" v-text="live.selected.level"></span></div>
+                </div>
+                <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                  <div data-live-values style="display: contents"><div id="selected-progress-bar" class="h-full bg-slate-900 rounded-full transition-all duration-500" style="width: 0%" role="progressbar" aria-label="Percentual da cota" aria-valuemin="0" aria-valuemax="100" :aria-valuenow="live.selected.percent" :style="{ width: live.selected.percent + '%', backgroundColor: live.selected.color }"></div></div>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-2 text-xs bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                <div>
+                  <span class="text-slate-500 block text-[11px]">Distância do Sensor</span>
+                  <div data-live-values style="display: contents"><strong class="text-slate-800 font-bold" id="selected-flow" v-text="live.selected.distance"></strong></div>
+                </div>
+                <div>
+                  <span class="text-slate-500 block text-[11px]">Última Leitura</span>
+                  <div data-live-values style="display: contents"><strong class="text-slate-800 font-bold" id="selected-updated" v-text="live.selected.updated"></strong></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MINI CHART -->
+            <div class="mb-2">
+              <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Histórico · últimas 60 leituras</h4>
+              <div class="h-28">
+                <canvas id="dashMiniChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 space-y-2">
+            <button onclick="triggerDefenseAlert()" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg transition-all shadow-sm flex items-center justify-center gap-1.5 text-xs">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              Registrar alerta e enviar e-mail
+            </button>
+
+            <button onclick="deleteSelectedSensor()" class="w-full py-1.5 bg-white hover:bg-slate-50 text-slate-600 hover:text-red-600 border border-slate-200 font-medium rounded-lg transition-all flex items-center justify-center gap-1 text-xs">
+              <svg class="w-3.5 h-3.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+              Excluir Ponto
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- TAB 2: ANALYTICS & CHARTS GALLERY -->
+    <section id="tab-charts" class="tab-content hidden space-y-5">
+      <div class="border-b border-slate-200 pb-3">
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Análises de Telemetria</h2>
+        <p class="text-xs text-slate-500">Histórico real de nível e distância dos sensores cadastrados.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Histórico Temporal (m)</h3>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Linha</span>
+          </div>
+          <div class="h-56">
+            <canvas id="chartLineTrend"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Altura Atual por Ponto (cm)</h3>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Barras</span>
+          </div>
+          <div class="h-56">
+            <canvas id="chartBarRainfall"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Distribuição por Alerta</h3>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Rosca</span>
+          </div>
+          <div class="h-56 flex items-center justify-center">
+            <canvas id="chartDonutStatus"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider">Distância do Sensor (cm)</h3>
+            <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">Área</span>
+          </div>
+          <div class="h-56">
+            <canvas id="chartAreaFlow"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: CONTACT & SOFTWARE TEAM -->
+    <section id="tab-devices" class="tab-content hidden fv-device-panel">
+      <h2>Dispositivos cadastrados</h2>
+      <p>Todos os sensores registrados, inclusive os que ainda não têm um ponto no mapa. A situação considera leituras recebidas nos últimos 30 segundos.</p>
+      <div data-live-values>
+        <p v-if="live.devices.loading" role="status">Carregando dispositivos…</p>
+        <p v-if="live.devices.error" class="fv-device-error" role="alert" v-text="live.devices.error"></p>
+        <p v-if="!live.devices.loading && !live.devices.error && !live.devices.rows.length">Nenhum dispositivo cadastrado no sistema.</p>
+        <div class="fv-table-scroll" v-if="live.devices.rows.length">
+          <table class="fv-device-table">
+            <caption class="fv-filter-summary">{{ live.devices.rows.length }} dispositivo(s) · atualização automática</caption>
+            <thead><tr><th scope="col">ID / Nome</th><th scope="col">Situação</th><th scope="col">Pontos vinculados</th><th scope="col">Última distância</th><th scope="col">Último contato</th></tr></thead>
+            <tbody><tr v-for="device in live.devices.rows" :key="device.id">
+              <td><strong v-text="'#' + device.id + ' · ' + device.name"></strong></td>
+              <td><span class="fv-device-state" :class="{ 'is-active': device.active }" v-text="device.status"></span></td>
+              <td v-text="device.points"></td><td v-text="device.distance"></td><td v-text="device.updated"></td>
+            </tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-contact" class="tab-content hidden space-y-5">
+      <div class="border-b border-slate-200 pb-3">
+        <h2 class="text-lg font-bold text-slate-900 tracking-tight">Equipe de Desenvolvimento</h2>
+        <p class="text-xs text-slate-500">Contatos técnicos e suporte à infraestrutura da plataforma.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="space-y-3">
+          <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Responsáveis Técnicos</h3>
+
+          <div class="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-slate-900 text-white font-bold text-xs flex items-center justify-center shrink-0">RU</div>
+            <div>
+              <h4 class="font-bold text-xs text-slate-900">Ruan</h4>
+              <p class="text-[11px] text-slate-500">Arquitetura de Software</p>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0">LU</div>
+            <div>
+              <h4 class="font-bold text-xs text-slate-900">Lucas</h4>
+              <p class="text-[11px] text-slate-500">Desenvolvimento IoT</p>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-slate-700 text-white font-bold text-xs flex items-center justify-center shrink-0">LZ</div>
+            <div>
+              <h4 class="font-bold text-xs text-slate-900">Luiz</h4>
+              <p class="text-[11px] text-slate-500">Engenharia Frontend</p>
+            </div>
+          </div>
+
+          <div class="bg-white border border-slate-200/80 rounded-lg p-3 shadow-sm flex items-center gap-3">
+            <div class="w-8 h-8 rounded-md bg-slate-600 text-white font-bold text-xs flex items-center justify-center shrink-0">GU</div>
+            <div>
+              <h4 class="font-bold text-xs text-slate-900">Guilherme</h4>
+              <p class="text-[11px] text-slate-500">Infraestrutura & Dados</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-200/60 border border-slate-300/60 rounded-lg p-3 text-xs space-y-1">
+            <div class="font-semibold text-slate-800">Central de Operações</div>
+            <p class="text-slate-600 text-[11px]">As ocorrências são salvas e encaminhadas por e-mail à equipe responsável.</p>
+            <div class="font-mono text-slate-900 font-bold">O resultado do envio aparece após o registro.</div>
+          </div>
+        </div>
+
+        <div class="lg:col-span-2 bg-white border border-slate-200/80 rounded-xl p-5 shadow-sm">
+          <h3 class="text-sm font-bold text-slate-900 mb-1">Registrar ocorrência por e-mail</h3>
+          <p class="text-xs text-slate-500 mb-4">Envie solicitações de manutenção ou relatório de anomalias.</p>
+
+          <form id="contactForm" onsubmit="handleContactSubmit(event)" class="space-y-3.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Nome Completo</label>
+                <input type="text" required placeholder="Ex: Carlos Eduardo" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"/>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">E-mail Corporativo</label>
+                <input type="email" required placeholder="carlos@defesacivil.rr.gov.br" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"/>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Órgão / Departamento</label>
+                <input type="text" required placeholder="Ex: Defesa Civil RR" class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"/>
+              </div>
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Tipo de Ocorrência</label>
+                <select required class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all text-slate-800">
+                  <option value="support">Suporte Operacional</option>
+                  <option value="new_sensor">Solicitação de Novo Sensor</option>
+                  <option value="calibration">Calibração de Equipamento</option>
+                  <option value="bug">Reportar Falha de Sistema</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Descrição</label>
+              <textarea required rows="3" placeholder="Descreva os detalhes da ocorrência..." class="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900 transition-all"></textarea>
+            </div>
+
+            <button type="submit" class="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-xs transition-all shadow-sm">
+              Registrar e enviar e-mail
+            </button>
+          </form>
+
+          <div id="contactSuccessMsg" class="hidden mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-emerald-800 text-xs font-medium">
+            <span id="contactSuccessText" role="status"></span>
+            <button type="button" class="fv-dismiss-message" aria-label="Fechar mensagem da ocorrência" onclick="closeContactMessage()">Fechar &times;</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+  <footer class="fv-footer"><span>FloodView · Monitoramento hídrico</span><span>Projeto acadêmico · Boa Vista, RR</span></footer>
+
+  <!-- MODAL: REGISTER NEW SENSOR POINT -->
+  <div id="registerModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
+    <div class="bg-white border border-slate-200 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 shadow-lg relative">
+      
+      <div class="flex justify-between items-center pb-2.5 border-b border-slate-100 mb-3.5">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Cadastrar Ponto de Telemetria</h3>
+          <p class="text-[11px] text-slate-500">Vincular um dispositivo cadastrado a um ponto do mapa</p>
+        </div>
+        <button onclick="closeRegisterModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-md">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <form id="sensorForm" onsubmit="handleSensorRegister(event)" class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Identificação / Local</label>
+          <input type="text" id="sensor-name" required maxlength="120" placeholder="Nome do ponto" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"/>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Referência / Bairro</label>
+          <input type="text" id="sensor-address" required maxlength="300" placeholder="Endereço ou referência" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"/>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Latitude</label>
+            <input type="number" step="any" id="sensor-lat" min="-90" max="90" required value="2.8202" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"/>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Longitude</label>
+            <input type="number" step="any" id="sensor-lng" min="-180" max="180" required value="-60.6719" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg font-mono focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"/>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Cota Máxima (m)</label>
+            <input type="number" step="0.001" id="sensor-max" min="0.001" max="4" required placeholder="Ex.: 0.26" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900"/>
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">ID do Dispositivo</label>
+            <input type="number" id="sensor-device" min="1" step="1" required value="1" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:ring-1 focus:ring-slate-900">
+          </div>
+        </div>
+
+        <div><label class="block text-[11px] font-semibold text-slate-700 uppercase mb-1">Distância com recipiente vazio (cm)</label><input type="number" id="sensor-empty" required min="2" max="400" step="0.1" placeholder="Meça antes de preencher" class="w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"><p class="text-[11px] text-slate-500 mt-1">Altura = distância vazia menos distância atual. Atenção em 50%, alagamento em 75% e crítico em 90% da cota máxima. Cobertura de 1 km.</p></div>
+        <div class="pt-2 flex justify-end gap-2">
+          <button type="button" onclick="closeRegisterModal()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-lg text-xs transition-all">
+            Cancelar
+          </button>
+          <button type="submit" id="btn-salvar-registro" class="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-lg text-xs transition-all shadow-sm">
+            Salvar Registro
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white text-xs px-3.5 py-2.5 rounded-lg shadow-md z-[9999] hidden flex items-center gap-2 border border-slate-800">
+    <span id="toast-text">Notificação enviada</span>
+  </div>
+
+  <!-- SCRIPT LOGIC -->
+
+  <script src="js/api.js"></script>
+  <script src="vendor/vue/vue.global.prod.js"></script>
+  <script src="js/live-values.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/dashboard-filters.js"></script>
+</body>
+</html>

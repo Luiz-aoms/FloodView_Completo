@@ -1,0 +1,227 @@
+.fv-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: 256px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  padding: 30px 18px 24px;
+  background: #0b303e;
+  color: #e4f0f3;
+  border-right: 1px solid #214652;
+  overflow-y: auto;
+}
+.fv-sidebar-brand .logo-img{
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+
+.fv-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px 30px;
+  color: white;
+  text-decoration: none;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -1px;
+}
+.fv-sidebar-brand span {
+  color: #6bd5cf;
+}
+.fv-sidebar-brand .fv-sidebar-name {
+  color: white;
+  white-space: nowrap;
+}
+.fv-sidebar-caption {
+  margin: 0 14px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #98b6c1;
+  text-transform: uppercase;
+}
+.fv-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.fv-sidebar nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+  min-height: 52px;
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 500;
+  color: #c8dde4;
+  background: transparent;
+  box-shadow: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.fv-sidebar nav button:hover {
+  background: #214957;
+  color: #fff;
+}
+.fv-sidebar nav .nav-btn.bg-white {
+  background: #176875;
+  color: white;
+  font-weight: 700;
+  box-shadow: inset 3px 0 #77e0d4;
+}
+.fv-sidebar nav button svg {
+  width: 20px;
+  height: 20px;
+  color: inherit;
+  flex-shrink: 0;
+}
+.fv-sidebar-note {
+  margin-top: auto;
+  padding: 32px 14px 0;
+  color: #a5c0c9;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.fv-sidebar-note a {
+  display: block;
+  color: #e4f0f3;
+  font-size: 15px;
+  margin-bottom: 12px;
+  text-decoration: none;
+}
+.fv-sidebar button:focus-visible,
+.fv-sidebar a:focus-visible,
+.fv-menu-toggle:focus-visible {
+  outline: 3px solid #77e0d4;
+  outline-offset: 3px;
+}
+.fv-menu-toggle,
+.fv-sidebar-close {
+  display: none;
+}
+.fv-app > header,
+.fv-app > main,
+.fv-app > .fv-footer {
+  margin-left: 256px;
+  width: calc(100% - 256px);
+  max-width: none;
+}
+.fv-app > header > div {
+  max-width: none;
+  padding: 20px 32px;
+}
+.fv-app > header .text-xs {
+  font-size: 14px;
+}
+.fv-app > header .text-\[11px\] {
+  font-size: 13px;
+}
+.fv-home .navbar .nav-link {
+  font-size: 16px;
+  font-weight: 600;
+}
+.fv-home .navbar .btn {
+  font-size: 15px;
+}
+#sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(5, 24, 34, 0.52);
+  backdrop-filter: blur(3px);
+}
+@media (max-width: 1023px) {
+  .fv-sidebar {
+    width: min(290px, 85vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition:
+      transform 0.2s,
+      visibility 0.2s;
+  }
+  .sidebar-open .fv-sidebar {
+    transform: translateX(0);
+    visibility: visible;
+  }
+  .sidebar-open {
+    overflow: hidden;
+  }
+  .fv-app > header,
+  .fv-app > main,
+  .fv-app > .fv-footer {
+    margin-left: 0;
+    width: 100%;
+  }
+  .fv-app > header > div {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    padding: 16px 20px;
+    gap: 14px;
+  }
+  .fv-menu-toggle,
+  .fv-sidebar-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    font-size: 24px;
+  }
+  .fv-menu-toggle {
+    background: #e7f1f3;
+    color: #0b3543;
+    border: 1px solid #cbdfe4;
+  }
+  .fv-sidebar-close {
+    position: absolute;
+    right: 12px;
+    top: 20px;
+    color: #d7e9ed;
+    background: #214957;
+  }
+  .fv-sidebar-brand {
+    padding-left: 0;
+    padding-right: 44px;
+    font-size: 24px;
+  }
+  .fv-sidebar-brand .logo-img {
+    width: 36px;
+    height: 36px;
+  }
+}
+@media (max-width: 600px) {
+  .fv-app > header > div {
+    padding: 14px 16px;
+  }
+  .fv-app > header h1 {
+    font-size: 23px;
+  }
+  .fv-app > header [data-live-values] {
+    font-size: 12px;
+  }
+  .fv-app > header .text-\[10px\] {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fv-sidebar {
+    transition: none;
+  }
+}

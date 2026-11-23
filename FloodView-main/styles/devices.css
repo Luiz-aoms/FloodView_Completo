@@ -1,0 +1,21 @@
+.fv-filter-panel,.fv-device-panel{background:#fff;border:1px solid #dbe7eb;border-radius:16px;padding:22px;box-shadow:0 4px 20px #14374506}
+#contactSuccessMsg:not(.hidden){display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.fv-dismiss-message{flex-shrink:0;min-height:36px;padding:4px 8px;border:1px solid currentColor;border-radius:6px;color:inherit;font:inherit;cursor:pointer}
+.fv-dismiss-message:hover{background:#00000008}
+.fv-dismiss-message:focus-visible{outline:2px solid currentColor;outline-offset:3px}
+.fv-filter-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr auto;gap:16px;align-items:end}
+.fv-filter-grid label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:600;color:#365563}
+.fv-filter-grid input,.fv-filter-grid select{width:100%;min-width:0;height:44px;padding:8px 12px;background:#f6f9fa;border:1px solid #cddde2;border-radius:8px;color:#173c4a;font-size:14px}
+.fv-filter-grid button{height:44px;padding:8px 16px;border:1px solid #bdd2da;border-radius:8px;color:#125667;font-size:14px;font-weight:600}
+.fv-filter-grid :focus-visible{outline:3px solid #69cfc7;outline-offset:2px}
+.fv-filter-summary,.fv-device-panel p{margin-top:12px;color:#59727d;font-size:13px;line-height:1.6}
+.fv-device-panel h2{font-size:22px;font-weight:700;color:#153c4b}
+.fv-table-scroll{overflow-x:auto;margin-top:20px}
+.fv-device-table{width:100%;border-collapse:collapse;text-align:left;font-size:14px}
+.fv-device-table th{padding:12px 14px;background:#eff5f7;color:#49636e;font-size:12px;white-space:nowrap}
+.fv-device-table td{padding:16px 14px;border-bottom:1px solid #e4edef;min-width:100px;overflow-wrap:anywhere;max-width:300px}
+.fv-device-state{display:inline-block;padding:5px 9px;background:#edf1f4;color:#536773;border-radius:6px;font-size:12px;font-weight:600}
+.fv-device-state.is-active{background:#e1f5ee;color:#146448}
+.fv-device-panel .fv-device-error,#contactSuccessMsg.email-warning{background:#fff6df;border:1px solid #e7c974;color:#73530b;padding:12px;border-radius:8px}
+@media(max-width:1100px){.fv-filter-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.fv-filter-grid{grid-template-columns:1fr}.fv-filter-panel,.fv-device-panel{padding:16px}}
