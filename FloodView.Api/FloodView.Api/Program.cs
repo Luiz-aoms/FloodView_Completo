@@ -37,7 +37,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// The new frontend is the default website; wwwroot remains available for calibration.
 var frontendPath = Path.GetFullPath(Path.Combine(
     app.Environment.ContentRootPath, "..", "..", "FloodView-main"));
 if (Directory.Exists(frontendPath))

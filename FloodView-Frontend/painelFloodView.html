@@ -5,18 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>FloodView - Monitoramento de Alagamentos</title>
   
-  <!-- Tailwind CSS CDN -->
   <link rel="stylesheet" href="vendor/tailwind.css">
   
-  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
   <script src="vendor/leaflet/leaflet.js"></script>
   
-  <!-- Leaflet Fullscreen Plugin -->
   <script src='vendor/fullscreen/Leaflet.fullscreen.min.js'></script>
   <link href='vendor/fullscreen/leaflet.fullscreen.css' rel='stylesheet' />
 
-  <!-- Chart.js -->
   <script src="vendor/chart/chart.umd.js"></script>
   
   <style>
@@ -49,22 +45,21 @@
     </a>
     <button id="sidebar-close" class="fv-sidebar-close" aria-label="Fechar menu">&times;</button>
     <p class="fv-sidebar-caption">Monitoramento</p>
-      <!-- Navigation Tabs (Sem Scroll) -->
       <nav class="flex flex-wrap items-center justify-center gap-1 bg-slate-100/80 p-1 rounded-lg border border-slate-200/60 text-xs font-medium w-full sm:w-auto">
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn px-3 py-1.5 rounded-md text-slate-900 bg-white shadow-sm font-semibold transition-all">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 13h7V3H3v10zm0 8h7v-5H3v5zm11 0h7V11h-7v10zm0-18v5h7V3h-7z"/></svg>
           Painel Principal
         </button>
         <button onclick="switchTab('charts')" id="nav-charts" class="nav-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>
           Análises & Gráficos
         </button>
-        <button onclick="openRegisterModal()" class="px-3 py-1.5 rounded-md text-slate-700 hover:bg-slate-200/70 transition-all flex items-center gap-1.5">
-          <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          Cadastrar Ponto
+        <button onclick="switchTab('devices')" id="nav-devices" class="nav-btn">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2" stroke-width="1.8"/><path stroke-linecap="round" stroke-width="1.8" d="M9 7h6m-6 4h6m-2 6h.01"/></svg>
+          Dispositivos
         </button>
-        <button onclick="switchTab('devices')" id="nav-devices" class="nav-btn">Dispositivos</button>
         <button onclick="switchTab('contact')" id="nav-contact" class="nav-btn px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 transition-all">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M21 11.5a8.3 8.3 0 0 1-8.5 8A9.5 9.5 0 0 1 8 18.3L3 20l1.7-4.4A8.1 8.1 0 0 1 4 12a8.3 8.3 0 0 1 8.5-8 8.3 8.3 0 0 1 8.5 7.5Z"/></svg>
           Equipe e ocorrências
         </button>
       </nav>
@@ -73,12 +68,10 @@
   </aside>
   <div id="sidebar-backdrop" hidden></div>
 
-  <!-- TOPBAR / NAVIGATION HEADER -->
   <header class="border-b border-slate-200 bg-white sticky top-0 z-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row justify-between items-center gap-3">
       
       <button id="sidebar-toggle" class="fv-menu-toggle" aria-label="Abrir menu" aria-controls="fv-sidebar" aria-expanded="false">&#9776;</button>
-      <!-- Brand & Location -->
       <div class="flex items-center gap-3 w-full lg:w-auto justify-between lg:justify-start">
         <div class="flex items-center gap-2.5">
           <div>
@@ -92,11 +85,9 @@
           </div>
         </div>
 
-        <!-- Mobile Clock -->
         <div data-live-values style="display: contents"><div class="lg:hidden text-xs text-slate-500 font-mono" id="clock-display-mobile" v-text="live.clock"></div></div>
       </div>
 
-      <!-- Status Indicator & Clock -->
       <div class="hidden lg:flex items-center gap-3 text-xs font-medium">
         <div class="flex items-center gap-2 bg-slate-50 px-2.5 py-1 rounded-md border border-slate-200 text-slate-600">
           <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,7 +106,6 @@
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
   <main class="max-w-7xl mx-auto px-4 sm:px-6 py-5 space-y-5 flex-1 w-full">
 
     <div class="fv-page-heading">
@@ -127,7 +117,6 @@
       <a class="fv-backlink" href="painelFloodView.html">← Sobre o projeto</a>
     </div>
 
-    <!-- ALERT BANNER -->
     <div id="alert-banner" class="bg-slate-900 border-l-4 border-l-red-500 text-white p-3.5 rounded-lg shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
       <div class="flex items-center gap-3">
         <div class="w-7 h-7 rounded bg-red-600/20 text-red-400 flex items-center justify-center shrink-0 border border-red-500/30">
@@ -145,7 +134,6 @@
       </button>
     </div>
 
-    <!-- TAB 1: DASHBOARD MAIN VIEW -->
     <div id="dashboard-filters" class="fv-filter-panel">
       <div class="fv-filter-grid">
         <label for="filter-search">Buscar ponto ou endereço<input id="filter-search" type="search" placeholder="Ex.: Centro" autocomplete="off"></label>
@@ -158,10 +146,8 @@
 
     <section id="tab-dashboard" class="tab-content space-y-5">
 
-      <!-- KPI CARDS -->
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
         
-        <!-- LEVEL 1: NORMAL -->
         <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm border-l-4 border-l-emerald-500 flex justify-between items-start">
           <div>
             <div class="flex items-center gap-1.5 mb-1">
@@ -173,7 +159,6 @@
           </div>
         </div>
 
-        <!-- LEVEL 2: ATENÇÃO -->
         <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm border-l-4 border-l-amber-500 flex justify-between items-start">
           <div>
             <div class="flex items-center gap-1.5 mb-1">
@@ -185,7 +170,6 @@
           </div>
         </div>
 
-        <!-- LEVEL 3: ALAGAMENTO -->
         <div class="bg-white border border-slate-200/80 rounded-xl p-4 shadow-sm border-l-4 border-l-red-500 flex justify-between items-start">
           <div>
             <div class="flex items-center gap-1.5 mb-1">
@@ -197,7 +181,6 @@
           </div>
         </div>
 
-        <!-- LEVEL 4: CRÍTICO -->
         <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm text-white border-l-4 border-l-slate-400 flex justify-between items-start">
           <div>
             <div class="flex items-center gap-1.5 mb-1">
@@ -211,10 +194,8 @@
 
       </div>
 
-      <!-- MAP & SELECTED POINT PANEL -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-        <!-- LEAFLET MAP CONTAINER -->
         <div class="fv-map-card lg:col-span-2 bg-white border border-slate-200/80 rounded-xl p-3.5 flex flex-col h-[500px] shadow-sm">
           <div class="flex justify-between items-center mb-2.5 px-1">
             <div>
@@ -245,7 +226,6 @@
           </div>
         </div>
 
-        <!-- SELECTED POINT DETAILS -->
         <div class="fv-sensor-card bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between shadow-sm">
           <div>
             <div class="flex justify-between items-start mb-3 border-b border-slate-100 pb-2.5 gap-2">
@@ -257,7 +237,6 @@
               <div data-live-values style="display: contents"><span id="selected-status-badge" class="px-2 py-0.5 bg-slate-900 text-white text-[10px] font-bold rounded tracking-wider uppercase shrink-0" v-text="live.selected.status" :style="{ backgroundColor: live.selected.color }"></span></div>
             </div>
 
-            <!-- WATER LEVEL METRICS -->
             <div class="space-y-3 mb-4">
               <div>
                 <div class="flex justify-between text-xs font-semibold mb-1">
@@ -281,7 +260,6 @@
               </div>
             </div>
 
-            <!-- MINI CHART -->
             <div class="mb-2">
               <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5">Histórico · últimas 60 leituras</h4>
               <div class="h-28">
@@ -311,7 +289,6 @@
 
     </section>
 
-    <!-- TAB 2: ANALYTICS & CHARTS GALLERY -->
     <section id="tab-charts" class="tab-content hidden space-y-5">
       <div class="border-b border-slate-200 pb-3">
         <h2 class="text-lg font-bold text-slate-900 tracking-tight">Análises de Telemetria</h2>
@@ -361,7 +338,6 @@
       </div>
     </section>
 
-    <!-- TAB 3: CONTACT & SOFTWARE TEAM -->
     <section id="tab-devices" class="tab-content hidden fv-device-panel">
       <h2>Dispositivos cadastrados</h2>
       <p>Todos os sensores registrados, inclusive os que ainda não têm um ponto no mapa. A situação considera leituras recebidas nos últimos 30 segundos.</p>
@@ -485,7 +461,6 @@
   </main>
   <footer class="fv-footer"><span>FloodView · Monitoramento hídrico</span><span>Projeto acadêmico · Boa Vista, RR</span></footer>
 
-  <!-- MODAL: REGISTER NEW SENSOR POINT -->
   <div id="registerModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[9999] hidden flex items-center justify-center p-4">
     <div class="bg-white border border-slate-200 rounded-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-5 shadow-lg relative">
       
@@ -547,12 +522,10 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
   <div id="toast" class="fixed bottom-4 right-4 bg-slate-900 text-white text-xs px-3.5 py-2.5 rounded-lg shadow-md z-[9999] hidden flex items-center gap-2 border border-slate-800">
     <span id="toast-text">Notificação enviada</span>
   </div>
 
-  <!-- SCRIPT LOGIC -->
 
   <script src="js/api.js"></script>
   <script src="vendor/vue/vue.global.prod.js"></script>

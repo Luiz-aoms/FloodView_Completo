@@ -1,4 +1,3 @@
-/* Shared visual identity. Loaded after the existing framework styles. */
 :root{--fv-ink:#102f3b;--fv-muted:#526d77;--fv-primary:#087e8b;--fv-deep:#0b3543;--fv-line:#dbe6ea;--fv-paper:#f3f7f8;--fv-shadow:0 8px 30px -18px #133c5050}
 html{scroll-behavior:smooth;scroll-padding-top:105px}
 body{font-family:Inter,"Segoe UI",system-ui,sans-serif!important;letter-spacing:-.012em;-webkit-font-smoothing:antialiased}
@@ -57,7 +56,6 @@ button:disabled{opacity:.55;cursor:wait}
 .fv-app .leaflet-container{font-family:inherit}
 .fv-footer{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;max-width:1440px;width:100%;margin:auto;padding:0 32px 24px;font-size:11px;color:#647e88}
 .fv-footer a{color:var(--fv-primary);text-decoration:none}
-/* Presentation */
 .fv-home{background:var(--fv-paper)!important;color:var(--fv-ink)!important}
 .fv-home #mainNav{background:#fffffff2!important;backdrop-filter:blur(14px);border-color:var(--fv-line)!important}
 .fv-home .navbar-brand{letter-spacing:-.045em;font-size:25px;color:var(--fv-ink)}
@@ -101,7 +99,6 @@ button:disabled{opacity:.55;cursor:wait}
 .fv-home main .badge.text-bg-dark{background:#e4eef1!important;color:var(--fv-primary)!important;font-size:11px!important;letter-spacing:.08em;text-transform:uppercase;padding:9px 12px}
 .fv-home .table{--bs-table-bg:transparent;font-size:14px}
 .fv-home .table td,.fv-home .table th{padding:20px 12px;border-color:var(--fv-line)}
-/* Simple map uses the same identity. */
 .fv-map-page{background:var(--fv-paper);color:var(--fv-ink);max-width:1440px;padding:32px;margin:0 auto;box-sizing:border-box}
 .fv-map-page .painel-superior{border:1px solid var(--fv-line);border-radius:16px;padding:24px;box-shadow:var(--fv-shadow);margin-top:24px}
 .fv-map-page h3{border-color:var(--fv-line);color:var(--fv-ink)}

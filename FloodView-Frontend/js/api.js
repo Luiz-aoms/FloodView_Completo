@@ -1,4 +1,3 @@
-/* Shared connection and measurement rules for the FloodView pages. */
 window.FloodView = (() => {
   const api = window.FLOODVIEW_API || "https://localhost:7064";
   async function request(path, options = {}) {

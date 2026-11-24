@@ -59,7 +59,6 @@ try
         }
         catch (TimeoutException)
         {
-            // Aguarda a próxima linha enviada pelo Arduino.
         }
         catch (HttpRequestException erro)
         {

@@ -1,4 +1,3 @@
-// Vue controls only these small HTML regions, never the map, forms or charts.
 window.FloodViewLive = (() => {
   const state = Vue.reactive({
     clock: "00:00:00",
@@ -28,8 +27,6 @@ window.FloodViewLive = (() => {
       status: "Consultando",
     },
   });
-  // Each region uses its existing HTML as the Vue template.
-  // v-text escapes values from the API; no HTML from user data is executed.
   document.querySelectorAll("[data-live-values]").forEach((element) => {
     Vue.createApp({ setup: () => ({ live: state }) }).mount(element);
   });
