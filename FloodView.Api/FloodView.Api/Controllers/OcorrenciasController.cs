@@ -1,13 +1,28 @@
 using FloodView.Api.Models;
-using FloodView.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FloodView.Api.Controllers;
 
 [ApiController]
 [Route("api/ocorrencias")]
-public class OcorrenciasController(DadosFloodView dados, OcorrenciaEmail email) : ControllerBase
+public class OcorrenciasController(DadosFloodView dados) : ControllerBase
 {
+    [HttpGet]
+    public async Task<IActionResult> Listar(CancellationToken cancellationToken)
+    {
+        var ocorrencias = await dados.Ocorrencias.AsNoTracking()
+            .OrderByDescending(o => o.RegistradaEmUtc)
+            .Select(o => new
+            {
+                o.Id, o.Nome, o.Email, o.Departamento, o.Tipo, o.Descricao,
+                o.RegistradaEmUtc
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(ocorrencias);
+    }
+
     [HttpPost]
     public async Task<IActionResult> Registrar(RegistrarOcorrenciaRequest request, CancellationToken cancellationToken)
     {
@@ -24,9 +39,7 @@ public class OcorrenciasController(DadosFloodView dados, OcorrenciaEmail email) 
         if (!TryValidateModel(ocorrencia)) return ValidationProblem(ModelState);
         dados.Ocorrencias.Add(ocorrencia);
         await dados.SaveChangesAsync(cancellationToken);
-        var envio = await email.Enviar(ocorrencia);
-        return StatusCode(201, new { ocorrencia.Id, ocorrencia.RegistradaEmUtc,
-            EmailEnviado = envio.Enviado, MensagemEmail = envio.Mensagem });
+        return StatusCode(201, new { ocorrencia.Id, ocorrencia.RegistradaEmUtc });
     }
 }
 

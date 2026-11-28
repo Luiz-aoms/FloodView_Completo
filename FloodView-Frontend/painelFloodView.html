@@ -450,6 +450,22 @@
             <span id="contactSuccessText" role="status"></span>
             <button type="button" class="fv-dismiss-message" aria-label="Fechar mensagem da ocorrência" onclick="closeContactMessage()">Fechar &times;</button>
           </div>
+
+          <div class="mt-6 border-t border-slate-200 pt-4">
+            <div class="flex items-center justify-between gap-3 mb-3">
+              <div><h3 class="text-sm font-bold text-slate-900">Ocorrências cadastradas</h3>
+                <p class="text-xs text-slate-500">Registros mais recentes e situação atual.</p></div>
+              <button type="button" id="refreshOccurrences" onclick="loadOccurrences()" class="px-3 py-2 border border-slate-200 rounded-lg text-xs font-semibold hover:bg-slate-50">Atualizar</button>
+            </div>
+            <p id="occurrencesMessage" class="text-xs text-slate-500 py-3">Carregando ocorrências...</p>
+            <div class="overflow-x-auto">
+              <table id="occurrencesTable" class="hidden w-full text-left text-xs">
+                <thead class="text-slate-500 border-b border-slate-200"><tr>
+                  <th class="py-2 pr-3">Protocolo</th><th class="py-2 pr-3">Data</th><th class="py-2 pr-3">Solicitante</th><th class="py-2 pr-3">Tipo</th><th class="py-2 pr-3">Descrição</th>
+                </tr></thead><tbody id="occurrencesRows" class="divide-y divide-slate-100"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -523,6 +539,7 @@
   </div>
 
 
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@5/dist/email.min.js"></script>
   <script src="js/api.js"></script>
   <script src="vendor/vue/vue.global.prod.js"></script>
   <script src="js/live-values.js"></script>

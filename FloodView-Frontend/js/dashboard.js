@@ -56,6 +56,7 @@ function switchTab(id) {
   });
   if (id === "dashboard") map?.invalidateSize();
   if (id === "charts") renderCharts();
+  if (id === "contact") loadOccurrences();
 }
 function openRegisterModal() {
   $("registerModal").classList.remove("hidden");
@@ -439,6 +440,76 @@ function closeContactMessage() {
   $("contactSuccessMsg").classList.add("hidden");
   $("contactForm").querySelector('button[type="submit"]').focus();
 }
+async function loadOccurrences() {
+  const message = $("occurrencesMessage"), table = $("occurrencesTable"), rows = $("occurrencesRows");
+  if (!message || !table || !rows) return;
+  message.textContent = "Carregando ocorrências...";
+  message.classList.remove("hidden");
+  table.classList.add("hidden");
+  try {
+    const occurrences = await FloodView.request("/api/ocorrencias");
+    rows.replaceChildren();
+    for (const occurrence of occurrences) {
+      const row = document.createElement("tr");
+      const values = [
+        `#${occurrence.id}`,
+        occurrence.registradaEmUtc ? new Date(occurrence.registradaEmUtc).toLocaleString("pt-BR") : "—",
+        [occurrence.nome, occurrence.email].filter(Boolean).join(" · ") || "—",
+        occurrence.tipo || "—",
+        occurrence.descricao || "—",
+      ];
+      for (const value of values) {
+        const cell = document.createElement("td");
+        cell.className = "py-2 pr-3 align-top text-slate-700";
+        cell.textContent = value;
+        row.append(cell);
+      }
+      rows.append(row);
+    }
+    message.textContent = occurrences.length ? "" : "Nenhuma ocorrência cadastrada.";
+    message.classList.toggle("hidden", occurrences.length > 0);
+    table.classList.toggle("hidden", occurrences.length === 0);
+  } catch (error) {
+    message.textContent = `Não foi possível carregar as ocorrências: ${error.message}`;
+  }
+}
+async function sendOccurrenceEmail(occurrence, protocol, registeredAt) {
+  if (!window.emailjs) {
+    return { sent: false, message: "O serviço de e-mail não carregou. Confira a conexão com a internet." };
+  }
+  try {
+    const timestamp = registeredAt
+      ? new Date(registeredAt).toLocaleString("pt-BR")
+      : new Date().toLocaleString("pt-BR");
+    const name = occurrence.nome || "Operador local";
+    const email = occurrence.email || "";
+    const department = occurrence.departamento || "";
+    const type = occurrence.tipo || "alerta";
+    const description = occurrence.descricao || "";
+    const message = [
+      `Protocolo: #${protocol}`,
+      `Tipo: ${type}`,
+      department && `Departamento: ${department}`,
+      description,
+    ].filter(Boolean).join("\n");
+    await window.emailjs.send(
+      "service_29pad8n",
+      "template_tsnmhvu",
+      {
+        // Variáveis do template customizado e do template Contact Us padrão.
+        protocolo: protocol, data: timestamp, nome: name, email,
+        departamento: department, tipo: type, descricao: description,
+        title: `Nova ocorrência FloodView #${protocol}`,
+        name, message, time: timestamp,
+      },
+      { publicKey: "NL9E24RjBuTpyewo1" },
+    );
+    return { sent: true, message: "E-mail aceito pelo EmailJS para envio." };
+  } catch (error) {
+    console.error("EmailJS não aceitou a ocorrência:", error);
+    return { sent: false, message: "Não foi possível enviar o e-mail. Confira o template e o serviço no EmailJS." };
+  }
+}
 async function handleContactSubmit(event) {
   event.preventDefault();
   const form = $("contactForm"),
@@ -450,21 +521,24 @@ async function handleContactSubmit(event) {
   button.disabled = true;
   $("contactSuccessMsg").classList.add("hidden");
   try {
+    const occurrence = {
+      nome: inputs[0].value,
+      email: inputs[1].value,
+      departamento: inputs[2].value,
+      tipo: select.value,
+      descricao: textarea.value,
+    };
     const result = await FloodView.request("/api/ocorrencias", {
       method: "POST",
-      body: JSON.stringify({
-        nome: inputs[0].value,
-        email: inputs[1].value,
-        departamento: inputs[2].value,
-        tipo: select.value,
-        descricao: textarea.value,
-      }),
+      body: JSON.stringify(occurrence),
     });
+    const emailResult = await sendOccurrenceEmail(occurrence, result.id, result.registradaEmUtc);
     $("contactSuccessText").textContent =
-      `Ocorrência #${result.id} salva. ${result.mensagemEmail || "Status do e-mail não informado pela API."}`;
-    $("contactSuccessMsg").classList.toggle("email-warning", !result.emailEnviado);
+      `Ocorrência #${result.id} salva. ${emailResult.message}`;
+    $("contactSuccessMsg").classList.toggle("email-warning", !emailResult.sent);
     $("contactSuccessMsg").classList.remove("hidden");
     form.reset();
+    await loadOccurrences();
   } catch (error) {
     showToast(error.message);
   } finally {
@@ -478,17 +552,20 @@ async function triggerDefenseAlert() {
     return;
   }
   try {
+    const occurrence = {
+      nome: "Operador local",
+      tipo: "alerta",
+      descricao: `${sensor.nome}: ${LABELS[sensor.status]}. Distância ${readingFor(sensor).distanciaCm} cm.`,
+    };
     const result = await FloodView.request("/api/ocorrencias", {
       method: "POST",
-      body: JSON.stringify({
-        nome: "Operador local",
-        tipo: "alerta",
-        descricao: `${sensor.nome}: ${LABELS[sensor.status]}. Distância ${readingFor(sensor).distanciaCm} cm.`,
-      }),
+      body: JSON.stringify(occurrence),
     });
+    const emailResult = await sendOccurrenceEmail(occurrence, result.id, result.registradaEmUtc);
     showToast(
-      `Alerta #${result.id} salvo. ${result.mensagemEmail || "Status do e-mail não informado pela API."}`,
+      `Alerta #${result.id} salvo. ${emailResult.message}`,
     );
+    await loadOccurrences();
   } catch (error) {
     showToast(error.message);
   }
@@ -527,6 +604,7 @@ window.addEventListener("load", () => {
   try {
     initMap();
     refresh();
+    loadOccurrences();
   } catch (error) {
     banner("Não foi possível iniciar o painel", error.message);
   }

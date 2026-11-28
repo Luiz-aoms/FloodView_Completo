@@ -13,4 +13,5 @@ public class DadosFloodView : DbContext
     public DbSet<Leitura> Leituras => Set<Leitura>();
     public DbSet<AreaMonitorada> AreasMonitoradas => Set<AreaMonitorada>();
     public DbSet<Ocorrencia> Ocorrencias => Set<Ocorrencia>();
+
 }

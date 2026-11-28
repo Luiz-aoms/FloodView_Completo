@@ -272,7 +272,8 @@ Migrações: `CriarBancoInicial`, `AdicionarAreasMonitoradas` e `IntegrarNovoPai
 | GET /api/areas-monitoradas | Listar pontos e configurações |
 | POST /api/areas-monitoradas | Cadastrar ponto vinculado a dispositivo existente |
 | DELETE /api/areas-monitoradas/{id} | Excluir ponto preservando leituras |
-| POST /api/ocorrencias | Salvar ocorrência e tentar encaminhar e-mail; retorna emailEnviado e mensagemEmail |
+| GET /api/ocorrencias | Listar ocorrências por data, incluindo solicitante e descrição |
+| POST /api/ocorrencias | Salvar ocorrência e retornar protocolo e data |
 
 O cadastro de área exige nome, dispositivo, coordenadas, limites de atenção/alerta e geometria Polygon. Descrição, distância vazia, cota e distância crítica são adicionais. A API valida campos, coordenadas, limites e estrutura básica dos anéis; não valida toda a topologia geográfica.
 
@@ -286,38 +287,20 @@ Os filtros do painel combinam busca por nome/endereço (sem diferenciar acentos)
 
 ## Ocorrências por e-mail
 
-A aba **Equipe e ocorrências** salva chamados na tabela Ocorrencias e exibe o protocolo após confirmação da API. Os tipos incluem suporte, novo sensor, calibração e falha do sistema. A API tenta enviar um e-mail automaticamente após salvar. O destinatário configurado é `luiz.a.silva56@aluno.senai.br`; o endereço informado no formulário é usado para resposta, nunca para substituir o destinatário.
+A aba **Equipe e ocorrências** salva chamados na tabela Ocorrencias e exibe o protocolo após confirmação da API. Os tipos incluem suporte, novo sensor, calibração e falha do sistema. Após salvar, o front envia o e-mail pelo EmailJS. Configure o destinatário da equipe em **To Email** no template e `{{email}}` em **Reply-To**.
 
 **Enviar alerta deste ponto** usa o mesmo fluxo para o ponto selecionado com leitura atual. O registro pelo botão é manual; mudanças de nível não disparam e-mails por conta própria. Não há envio de SMS ou integração com a Defesa Civil.
 
-O resultado distingue registro salvo de e-mail aceito pelo servidor SMTP. Isso não confirma entrega na caixa de entrada. Sem configuração ou em falha de SMTP, a ocorrência continua salva e o painel mostra um aviso; não há fila persistente nem repetição automática do envio. O resultado de envio é retornado na resposta, mas não é gravado como histórico de entrega no banco.
+O resultado distingue registro salvo de solicitação de e-mail aceita pelo EmailJS. Isso não confirma entrega na caixa de entrada. Se o EmailJS falhar, a ocorrência continua salva e o painel mostra um aviso; não há fila persistente nem repetição automática do envio.
 
-### Configurar o envio no backend
+### Configurar o EmailJS
 
-O remetente definido é `floodview.ocorrencias@gmail.com`, usando `smtp.gmail.com`, porta 587 e STARTTLS. Para esta conta, ative a verificação em duas etapas e gere uma senha de app chamada FloodView, conforme a [orientação do Google](https://support.google.com/accounts/answer/185833?hl=pt-BR). Na pasta `FloodView.Api/FloodView.Api`, execute `powershell -NoProfile -ExecutionPolicy Bypass -File .\ConfigurarEmail.ps1`. O script solicita a senha de app com entrada oculta, salva a configuração nos User Secrets e habilita o envio. Não envia uma mensagem de teste. Reinicie a API em Development após configurar; a senha normal do Gmail não deve ser usada. Se a conta não oferecer senhas de app, será necessário adaptar a autenticação.
-
-O envio fica desabilitado até configurar a conta remetente. Na pasta `FloodView.Api/FloodView.Api`, configure os valores fornecidos pelo serviço de e-mail:
-
-```powershell
-dotnet user-secrets set "Email:Host" "HOST_SMTP_DO_PROVEDOR"
-dotnet user-secrets set "Email:Porta" "587"
-dotnet user-secrets set "Email:UsarTls" "true"
-dotnet user-secrets set "Email:Remetente" "CONTA_REMETENTE"
-dotnet user-secrets set "Email:Usuario" "USUARIO_SMTP"
-# Digite a credencial localmente sem exibi-la no terminal ou salvá-la no histórico:
-$segredoEmail = Read-Host "Credencial SMTP" -AsSecureString
-@{ Email = @{ Senha = [System.Net.NetworkCredential]::new('', $segredoEmail).Password } } | ConvertTo-Json | dotnet user-secrets set
-Remove-Variable segredoEmail
-dotnet user-secrets set "Email:Habilitado" "true"
-dotnet watch
-```
-
-Confirme host, porta e tipo de autenticação com o provedor. Esta implementação suporta SMTP com STARTTLS e usuário/credencial; provedores que exigem OAuth precisam de outra integração. Não coloque senhas no frontend ou no `appsettings.json`. User Secrets é destinado ao desenvolvimento local, não é um cofre criptografado. As mesmas chaves podem ser fornecidas por variáveis de ambiente, como `Email__Senha`. Não é necessário criar uma migration para essas mudanças.
+O front usa o Service ID, Template ID e Public Key definidos em `js/dashboard.js`. No template, configure os parâmetros `{{protocolo}}`, `{{data}}`, `{{nome}}`, `{{email}}`, `{{departamento}}`, `{{tipo}}` e `{{descricao}}`. Restrinja as origens permitidas às URLs usadas na apresentação. A Public Key é feita para uso no navegador; nunca coloque a Private Key no front.
 
 ### Verificações automatizadas
 
 - Na pasta `FloodView-main`: `npm test` valida listagem, sensores sem vínculo, falhas de consulta, filtros combinados, valores Vue, menu móvel e resultado do e-mail.
-- Na pasta `FloodView.Api`: `dotnet run --project FloodView.EmailTests/FloodView.EmailTests.csproj` testa o serviço de e-mail com SMTP local simulado, sem mensagens externas.
+- Na pasta `FloodView.Api`: `dotnet run --project FloodView.EmailTests/FloodView.EmailTests.csproj` testa o serviço de e-mail com respostas HTTP simuladas, sem mensagens externas.
 
 ## Teste completo da montagem
 

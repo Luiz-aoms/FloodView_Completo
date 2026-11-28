@@ -9,7 +9,6 @@ builder.Services.AddDbContext<DadosFloodView>(options =>
         builder.Configuration.GetConnectionString("FloodView")));
 
 builder.Services.AddControllers();
-builder.Services.AddScoped<FloodView.Api.Services.OcorrenciaEmail>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -37,9 +36,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var frontendPath = Path.GetFullPath(Path.Combine(
-    app.Environment.ContentRootPath, "..", "..", "FloodView-main"));
-if (Directory.Exists(frontendPath))
+var frontendPath = new[] { "FloodView-main", "FloodView-Frontend" }
+    .Select(folder => Path.GetFullPath(Path.Combine(
+        app.Environment.ContentRootPath, "..", "..", folder)))
+    .FirstOrDefault(Directory.Exists);
+if (frontendPath is not null)
 {
     var frontendFiles = new PhysicalFileProvider(frontendPath);
     var defaultFiles = new DefaultFilesOptions { FileProvider = frontendFiles };
